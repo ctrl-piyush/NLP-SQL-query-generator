@@ -1,0 +1,17 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "functions": {
+    "app/api/generate/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/explain/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/validate/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}
