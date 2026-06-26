@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { X, Plus, Trash2, Table2, Save, Database } from "lucide-react";
+import { X, Plus, Trash2, Table2, Save, Database, Plug, Key, Link } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { useConnectionStore } from "@/lib/connectionStore";
 import type { SchemaTable } from "@/types";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
@@ -21,6 +22,7 @@ const DEFAULT_TABLE: SchemaTable = {
 
 export default function SchemaEditor() {
   const { customTables, addTable, removeTable, setSchemaEditorOpen } = useAppStore();
+  const { isConnected, databaseName, liveSchema } = useConnectionStore();
   const [editingTable, setEditingTable] = useState<SchemaTable>({ ...DEFAULT_TABLE, columns: [...DEFAULT_TABLE.columns] });
   const [mode, setMode] = useState<"list" | "add">("list");
 
@@ -85,7 +87,47 @@ export default function SchemaEditor() {
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {mode === "list" ? (
             <>
-              {/* Existing tables */}
+              {/* Live database schema section */}
+              {isConnected && liveSchema.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Live Database Schema
+                    </h3>
+                    <span className="flex items-center gap-1 px-2 py-0.5 bg-accent-green/10 border border-accent-green/30 rounded-md">
+                      <Plug size={10} className="text-accent-green" />
+                      <span className="text-[10px] text-accent-green font-medium">{databaseName}</span>
+                    </span>
+                  </div>
+                  {liveSchema.map((t) => (
+                    <div key={t.name} className="bg-surface-border/30 rounded-xl border border-surface-border overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <Table2 size={16} className="text-accent-cyan flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm font-mono font-semibold text-white">{t.name}</p>
+                          <p className="text-xs text-gray-500">{t.columns.length} columns</p>
+                        </div>
+                      </div>
+                      <div className="border-t border-surface-border/50 px-4 py-2 space-y-1">
+                        {t.columns.map((col) => (
+                          <div key={col.name} className="flex items-center gap-2 text-xs">
+                            {col.isPrimary && <Key size={9} className="text-accent-amber flex-shrink-0" />}
+                            {col.foreignKey && <Link size={9} className="text-accent-purple flex-shrink-0" />}
+                            {!col.isPrimary && !col.foreignKey && <span className="w-[9px]" />}
+                            <span className="font-mono text-gray-300">{col.name}</span>
+                            <span className="font-mono text-brand-400">{col.type}</span>
+                            {col.foreignKey && (
+                              <span className="text-gray-500">→ {col.foreignKey.referencedTable}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Existing custom tables */}
               {customTables.length > 0 ? (
                 <div className="space-y-2">
                   <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Your Tables ({customTables.length})</h3>

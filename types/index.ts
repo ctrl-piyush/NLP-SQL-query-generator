@@ -101,3 +101,77 @@ export interface GenerateQueryRequest {
   schemaContext?: string;
   customTables?: SchemaTable[];
 }
+
+// ─── Database Connectivity Types ─────────────────────────────────────────────
+
+export interface ConnectionConfig {
+  databaseType: DatabaseType;
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+}
+
+export interface LiveTableInfo {
+  name: string;
+  columns: LiveColumnInfo[];
+}
+
+export interface LiveColumnInfo {
+  name: string;
+  type: string;
+  isPrimary: boolean;
+  isNullable: boolean;
+  defaultValue: string | null;
+  foreignKey: {
+    referencedTable: string;
+    referencedColumn: string;
+  } | null;
+}
+
+export interface ConnectRequest {
+  databaseType: DatabaseType;
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+}
+
+export interface ConnectResponse {
+  success: boolean;
+  message: string;
+  schema?: LiveTableInfo[];
+}
+
+export interface ExecuteRequest {
+  sql: string;
+  connectionConfig: ConnectionConfig;
+  confirm?: boolean;
+}
+
+export interface SelectResult {
+  type: "select";
+  columns: string[];
+  rows: Record<string, unknown>[];
+  rowCount: number;
+  hasMore: boolean;
+  executionTimeMs: number;
+}
+
+export interface MutationResult {
+  type: "mutation";
+  operation: "INSERT" | "UPDATE" | "DELETE";
+  affectedRows: number;
+  executionTimeMs: number;
+}
+
+export interface ExecutionError {
+  type: "error";
+  code: string;
+  message: string;
+  detail?: string;
+}
+
+export type ExecutionResult = SelectResult | MutationResult | ExecutionError;

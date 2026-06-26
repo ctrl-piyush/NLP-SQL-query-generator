@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import ConnectionModal from "@/components/ConnectionModal";
+import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
 import { Toaster, toast } from "react-hot-toast";
 import { Database, Cpu, Github, BookOpen, Settings2, Zap } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { useConnectionStore } from "@/lib/connectionStore";
 import QueryInput from "@/components/QueryInput";
 import ResultsPanel from "@/components/ResultsPanel";
 import HistorySidebar from "@/components/HistorySidebar";
@@ -18,6 +21,7 @@ export default function HomePage() {
   const [result, setResult] = useState<GeneratedQueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastInput, setLastInput] = useState("");
+  const [connectionModalOpen, setConnectionModalOpen] = useState(false);
 
   const {
     databaseType,
@@ -27,11 +31,38 @@ export default function HomePage() {
     addToHistory,
   } = useAppStore();
 
+  const { liveSchema, isConnected } = useConnectionStore();
+
   const handleGenerate = useCallback(
     async (userInput: string) => {
       setLoading(true);
       setError(null);
       setLastInput(userInput);
+
+      // If connected with live schema, convert to SchemaTable format and use it.
+      // Otherwise fall back to manually-defined customTables.
+      const effectiveTables =
+        isConnected && liveSchema.length > 0
+          ? liveSchema.map((t) => ({
+              name: t.name,
+              columns: t.columns.map((c) => ({
+                name: c.name,
+                type: c.type,
+                constraints:
+                  [
+                    c.isPrimary ? "PRIMARY KEY" : "",
+                    !c.isNullable ? "NOT NULL" : "",
+                    c.foreignKey
+                      ? `REFERENCES ${c.foreignKey.referencedTable}(${c.foreignKey.referencedColumn})`
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ") || undefined,
+              })),
+            }))
+          : customTables.length > 0
+            ? customTables
+            : undefined;
 
       try {
         const res = await fetch("/api/generate", {
@@ -40,7 +71,7 @@ export default function HomePage() {
           body: JSON.stringify({
             userInput,
             databaseType,
-            customTables: customTables.length > 0 ? customTables : undefined,
+            customTables: effectiveTables,
           }),
         });
 
@@ -80,7 +111,7 @@ export default function HomePage() {
         setLoading(false);
       }
     },
-    [databaseType, customTables, addToHistory]
+    [databaseType, customTables, addToHistory, liveSchema, isConnected]
   );
 
   const handleSaveToHistory = useCallback(
@@ -137,6 +168,7 @@ export default function HomePage() {
             <Settings2 size={13} />
             <span className="hidden sm:block">Schema</span>
           </button>
+          <ConnectionStatusIndicator onOpenModal={() => setConnectionModalOpen(true)} />
           <a
             href="https://console.groq.com/docs"
             target="_blank"
@@ -185,6 +217,9 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* Connection modal */}
+      <ConnectionModal isOpen={connectionModalOpen} onClose={() => setConnectionModalOpen(false)} />
 
       {/* Schema editor modal */}
       {schemaEditorOpen && <SchemaEditor />}

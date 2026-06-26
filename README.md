@@ -156,3 +156,10 @@ Validate and optimize a SQL query.
 ## License
 
 MIT
+
+## Security Notes
+
+- **Do not expose this application to untrusted users** without implementing per-user authentication and rate limiting. Database credentials are supplied by the client on each request, so any user with access to the UI can connect to any database the server can reach.
+- **Credentials exist only in browser JavaScript heap memory** until the page is refreshed or the tab is closed. They are not persisted to localStorage, cookies, or any server-side storage.
+- **Credentials are transmitted only over HTTPS in POST request bodies.** They are never sent as URL parameters or stored in server logs.
+- **The server opens a new database connection per request** and does not maintain a persistent connection pool. No credentials or connections persist between HTTP requests.

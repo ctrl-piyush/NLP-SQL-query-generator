@@ -1,18 +1,20 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Code2, BookOpen, AlertTriangle, CheckSquare, Table2,
-  Lightbulb, Sparkles, Copy, Check, DownloadCloud
+  PlayCircle, Lightbulb, Sparkles, Copy, Check, DownloadCloud
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getOperationBadge, getRiskBg, getRiskColor } from "@/lib/utils";
 import type { GeneratedQueryResult, QueryAlternative } from "@/types";
+import { useConnectionStore } from "@/lib/connectionStore";
 import QueryAlternatives from "./QueryAlternatives";
 import ExplanationPanel from "./ExplanationPanel";
 import ImpactPanel from "./ImpactPanel";
 import ValidationPanel from "./ValidationPanel";
 import SchemaViewer from "./SchemaViewer";
+import ExecutionResultsPanel from "./ExecutionResultsPanel";
 import SqlCodeBlock from "./SqlCodeBlock";
 import Badge from "./Badge";
 
@@ -22,6 +24,7 @@ const TABS = [
   { id: "impact",      label: "Impact",       icon: AlertTriangle },
   { id: "validation",  label: "Validation",   icon: CheckSquare },
   { id: "schema",      label: "Schema",       icon: Table2 },
+  { id: "results",     label: "Results",      icon: PlayCircle },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -37,6 +40,21 @@ export default function ResultsPanel({ result, onSaveToHistory }: ResultsPanelPr
     result.alternatives.find((a) => a.isRecommended) ?? result.alternatives[0] ?? null
   );
   const [exportCopied, setExportCopied] = useState(false);
+
+  const lastExecutionResult = useConnectionStore((s) => s.lastExecutionResult);
+  const prevResultRef = useRef(lastExecutionResult);
+
+  // Auto-switch to Results tab when a new execution result arrives
+  useEffect(() => {
+    if (lastExecutionResult && lastExecutionResult !== prevResultRef.current) {
+      setActiveTab("results");
+    }
+    prevResultRef.current = lastExecutionResult;
+  }, [lastExecutionResult]);
+
+  const handleSwitchToResults = useCallback(() => {
+    setActiveTab("results");
+  }, []);
 
   const handleSelectAlt = useCallback((alt: QueryAlternative) => {
     setSelectedAlt(alt);
@@ -159,6 +177,8 @@ export default function ResultsPanel({ result, onSaveToHistory }: ResultsPanelPr
               alternatives={result.alternatives}
               selectedId={selectedAlt?.id ?? null}
               onSelect={handleSelectAlt}
+              impact={result.impact}
+              onSwitchToResults={handleSwitchToResults}
             />
 
             {/* Selected query preview */}
@@ -193,6 +213,10 @@ export default function ResultsPanel({ result, onSaveToHistory }: ResultsPanelPr
 
         {activeTab === "schema" && (
           <SchemaViewer tables={result.tablesInvolved} />
+        )}
+
+        {activeTab === "results" && (
+          <ExecutionResultsPanel result={lastExecutionResult} />
         )}
       </div>
     </div>
