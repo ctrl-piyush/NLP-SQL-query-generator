@@ -16,6 +16,8 @@ node_modules
 # Misc
 .DS_Store
 *.pem
+.kiro/
+{app/
 
 # Debug
 npm-debug.log*

@@ -73,7 +73,9 @@ function initializeSchema(db: Database.Database): void {
 
 /**
  * Seeds a default admin account if no users exist in the database.
- * Default credentials: admin@admin.com / admin1234
+ * Also seeds a demo editor account for visitors.
+ * Default admin: admin@admin.com / admin1234
+ * Demo account: demo@demo.com / demo1234 (editor role)
  */
 function seedDefaultAdmin(db: Database.Database): void {
   const row = db.prepare("SELECT COUNT(*) as count FROM users").get() as {
@@ -82,12 +84,20 @@ function seedDefaultAdmin(db: Database.Database): void {
 
   if (row.count === 0) {
     const now = new Date().toISOString();
-    const passwordHash = bcrypt.hashSync("admin1234", 10);
 
+    // Admin account
+    const adminHash = bcrypt.hashSync("admin1234", 10);
     db.prepare(
       `INSERT INTO users (id, email, password_hash, role, allowed_tables, failed_attempts, locked_until, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(uuidv4(), "admin@admin.com", passwordHash, "admin", "[]", 0, null, now, now);
+    ).run(uuidv4(), "admin@admin.com", adminHash, "admin", "[]", 0, null, now, now);
+
+    // Demo account (editor role — can generate + execute SELECT)
+    const demoHash = bcrypt.hashSync("demo1234", 10);
+    db.prepare(
+      `INSERT INTO users (id, email, password_hash, role, allowed_tables, failed_attempts, locked_until, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(uuidv4(), "demo@demo.com", demoHash, "editor", "[]", 0, null, now, now);
   }
 }
 
