@@ -86,8 +86,11 @@ export async function POST(req: NextRequest) {
     // PHASE 1: VALIDATION (on ORIGINAL user SQL)
     // ══════════════════════════════════════════════════════════════════════════
 
+    // Determine effective database type (demo mode always uses mysql)
+    const dbType = isDemo ? "mysql" : connectionConfig?.databaseType || "mysql";
+
     // Single statement validation
-    const validation = validateSingleStatement(trimmedSql, connectionConfig.databaseType);
+    const validation = validateSingleStatement(trimmedSql, dbType);
     if (!validation.valid) {
       return NextResponse.json(
         {
@@ -100,7 +103,7 @@ export async function POST(req: NextRequest) {
     }
 
     // WHERE clause guard
-    if (requiresConfirmation(trimmedSql, connectionConfig.databaseType) && confirm !== true) {
+    if (requiresConfirmation(trimmedSql, dbType) && confirm !== true) {
       return NextResponse.json(
         {
           type: "error",
@@ -124,7 +127,7 @@ export async function POST(req: NextRequest) {
 
     let executableSql = cleanedSql;
     if (operationType === "SELECT") {
-      if (connectionConfig.databaseType === "mysql") {
+      if (dbType === "mysql") {
         executableSql = `SELECT * FROM (${cleanedSql}) AS __subq LIMIT 201`;
       } else {
         executableSql = `SELECT * FROM (${cleanedSql}) AS __subq FETCH FIRST 201 ROWS ONLY`;

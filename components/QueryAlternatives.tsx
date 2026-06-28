@@ -87,12 +87,12 @@ export default function QueryAlternatives({
         setIsExecuting(false);
       }
     },
-    [connectionConfig, setExecutionResult, setIsExecuting, onSwitchToResults]
+    [connectionConfig, isDemo, isConnected, setExecutionResult, setIsExecuting, onSwitchToResults]
   );
 
   const handleExecuteClick = useCallback(
     (alt: QueryAlternative) => {
-      if (!isConnected || !connectionConfig) return;
+      if (!isConnected || (!connectionConfig && !isDemo)) return;
 
       const riskLevel = impact?.riskLevel ?? "low";
 
@@ -105,7 +105,7 @@ export default function QueryAlternatives({
         executeQuery(alt);
       }
     },
-    [isConnected, connectionConfig, impact, executeQuery]
+    [isConnected, connectionConfig, isDemo, impact, executeQuery]
   );
 
   const handleConfirmExecution = useCallback(() => {

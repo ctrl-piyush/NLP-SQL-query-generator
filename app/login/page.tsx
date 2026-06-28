@@ -95,10 +95,10 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Two-column layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column: How It Works */}
-          <div className="bg-surface-card border border-surface-border rounded-xl p-8">
+        {/* Two-column layout — info smaller, login larger */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+          {/* Left Column: How It Works (smaller) */}
+          <div className="lg:col-span-2 bg-surface-card border border-surface-border rounded-xl p-6">
             <h2 className="text-lg font-semibold text-white mb-6">
               How It Works
             </h2>
@@ -167,8 +167,8 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Right Column: Login Form */}
-          <div>
+          {/* Right Column: Login Form (larger) */}
+          <div className="lg:col-span-3">
             {/* Quick Demo Button */}
             <button
               onClick={handleQuickDemo}
