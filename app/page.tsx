@@ -283,7 +283,7 @@ function EmptyState() {
 
         <div className="flex items-center justify-center gap-2 text-xs text-gray-600">
           <Cpu size={12} className="text-accent-green" />
-          <span>Powered by Groq's ultra-fast LLM inference</span>
+          <span>Powered by Groq&apos;s ultra-fast LLM inference</span>
         </div>
       </div>
     </div>
