@@ -7,12 +7,14 @@ import type { ConnectionConfig, LiveTableInfo, ExecutionResult } from "@/types";
 interface ConnectionState {
   connectionConfig: ConnectionConfig | null;
   isConnected: boolean;
+  isDemo: boolean;
   databaseName: string | null;
   liveSchema: LiveTableInfo[];
   lastExecutionResult: ExecutionResult | null;
   isExecuting: boolean;
 
   setConnection: (config: ConnectionConfig, schema: LiveTableInfo[]) => void;
+  setDemoConnection: (schema: LiveTableInfo[], dbName: string) => void;
   disconnect: () => void;
   setExecutionResult: (result: ExecutionResult | null) => void;
   setIsExecuting: (executing: boolean) => void;
@@ -21,6 +23,7 @@ interface ConnectionState {
 export const useConnectionStore = create<ConnectionState>((set) => ({
   connectionConfig: null,
   isConnected: false,
+  isDemo: false,
   databaseName: null,
   liveSchema: [],
   lastExecutionResult: null,
@@ -30,7 +33,17 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
     set({
       connectionConfig: config,
       isConnected: true,
+      isDemo: false,
       databaseName: config.database,
+      liveSchema: schema,
+    }),
+
+  setDemoConnection: (schema, dbName) =>
+    set({
+      connectionConfig: null,
+      isConnected: true,
+      isDemo: true,
+      databaseName: dbName,
       liveSchema: schema,
     }),
 
@@ -38,6 +51,7 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
     set({
       connectionConfig: null,
       isConnected: false,
+      isDemo: false,
       databaseName: null,
       liveSchema: [],
       lastExecutionResult: null,

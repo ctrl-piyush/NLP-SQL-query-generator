@@ -34,8 +34,8 @@ export async function POST(req: NextRequest) {
   let connection: UnifiedConnection | null = null;
 
   try {
-    const body: ExecuteRequest = await req.json();
-    const { sql, connectionConfig, confirm } = body;
+    const body = await req.json();
+    const { sql, connectionConfig, confirm, isDemo } = body as ExecuteRequest & { isDemo?: boolean };
 
     // ── Authentication check ──────────────────────────────────────────────────
     const session = await getServerSession(authOptions);
@@ -135,7 +135,40 @@ export async function POST(req: NextRequest) {
     // PHASE 3: EXECUTION
     // ══════════════════════════════════════════════════════════════════════════
 
-    connection = await createConnection(connectionConfig);
+    if (isDemo) {
+      // Demo mode: use server-side credentials, SELECT only
+      const demoHost = process.env.DEMO_DB_HOST;
+      const demoPort = parseInt(process.env.DEMO_DB_PORT || "3306", 10);
+      const demoUser = process.env.DEMO_DB_USER;
+      const demoPassword = process.env.DEMO_DB_PASSWORD;
+      const demoDatabase = process.env.DEMO_DB_NAME;
+
+      if (!demoHost || !demoUser || !demoPassword || !demoDatabase) {
+        return NextResponse.json(
+          { type: "error", code: "DEMO_UNAVAILABLE", message: "Demo database is not configured." } satisfies ExecutionError,
+          { status: 503 }
+        );
+      }
+
+      // Demo mode is SELECT only
+      if (operationType !== "SELECT") {
+        return NextResponse.json(
+          { type: "error", code: "DEMO_READ_ONLY", message: "Demo database is read-only. Only SELECT queries are allowed." } satisfies ExecutionError,
+          { status: 403 }
+        );
+      }
+
+      connection = await createConnection({
+        databaseType: "mysql",
+        host: demoHost,
+        port: demoPort,
+        user: demoUser,
+        password: demoPassword,
+        database: demoDatabase,
+      });
+    } else {
+      connection = await createConnection(connectionConfig);
+    }
     const startTime = performance.now();
     const result = await connection.query(executableSql);
     const executionTimeMs = Math.round(performance.now() - startTime);

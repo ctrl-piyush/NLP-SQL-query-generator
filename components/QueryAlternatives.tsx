@@ -43,12 +43,12 @@ export default function QueryAlternatives({
   const userRole = session?.user?.role ?? "viewer";
   const allowedTables = session?.user?.allowedTables ?? [];
 
-  const { isConnected, connectionConfig, setExecutionResult, setIsExecuting } =
+  const { isConnected, connectionConfig, setExecutionResult, setIsExecuting, isDemo } =
     useConnectionStore();
 
   const executeQuery = useCallback(
     async (alt: QueryAlternative, confirm?: boolean) => {
-      if (!connectionConfig) return;
+      if (!isConnected) return;
 
       setExecutingId(alt.id);
       setIsExecuting(true);
@@ -57,6 +57,7 @@ export default function QueryAlternatives({
         const body: Record<string, unknown> = {
           sql: alt.sql,
           connectionConfig,
+          isDemo,
         };
 
         // CRITICAL INVARIANT: confirm:true is ONLY included when user clicked "Execute Anyway"

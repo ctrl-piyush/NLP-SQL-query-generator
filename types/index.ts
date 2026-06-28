@@ -143,6 +143,7 @@ export interface ConnectResponse {
   success: boolean;
   message: string;
   schema?: LiveTableInfo[];
+  isDemo?: boolean;
 }
 
 export interface ExecuteRequest {

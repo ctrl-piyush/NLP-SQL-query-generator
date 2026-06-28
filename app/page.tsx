@@ -37,7 +37,26 @@ export default function HomePage() {
     addToHistory,
   } = useAppStore();
 
-  const { liveSchema, isConnected } = useConnectionStore();
+  const { liveSchema, isConnected, isDemo, setDemoConnection } = useConnectionStore();
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  const handleConnectDemo = useCallback(async () => {
+    setDemoLoading(true);
+    try {
+      const res = await fetch("/api/connect-demo", { method: "POST" });
+      const data = await res.json();
+      if (data.success && data.schema) {
+        setDemoConnection(data.schema, "demo");
+        toast.success("Connected to demo database!");
+      } else {
+        toast.error(data.message || "Failed to connect to demo database.");
+      }
+    } catch {
+      toast.error("Failed to connect to demo database.");
+    } finally {
+      setDemoLoading(false);
+    }
+  }, [setDemoConnection]);
 
   const handleGenerate = useCallback(
     async (userInput: string) => {
@@ -176,7 +195,19 @@ export default function HomePage() {
             <span className="hidden sm:block">Schema</span>
           </button>
           {!isViewer && (
-            <ConnectionStatusIndicator onOpenModal={() => setConnectionModalOpen(true)} />
+            <>
+              {!isConnected && (
+                <button
+                  onClick={handleConnectDemo}
+                  disabled={demoLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-accent-cyan/30 bg-accent-cyan/10 text-xs text-accent-cyan hover:bg-accent-cyan/20 hover:border-accent-cyan/50 transition-all disabled:opacity-50"
+                >
+                  <Database size={13} />
+                  <span className="hidden sm:block">{demoLoading ? "Connecting…" : "Try Demo DB"}</span>
+                </button>
+              )}
+              <ConnectionStatusIndicator onOpenModal={() => setConnectionModalOpen(true)} />
+            </>
           )}
           <a
             href="https://console.groq.com/docs"
