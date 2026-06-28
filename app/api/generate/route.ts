@@ -18,8 +18,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body: GenerateQueryRequest = await req.json();
-    const { userInput, databaseType, schemaContext, customTables } = body;
+    const body = await req.json();
+    const { userInput, databaseType, schemaContext, customTables, isDemo } = body as GenerateQueryRequest & { isDemo?: boolean };
 
     if (!userInput || userInput.trim().length < 3) {
       return NextResponse.json(
@@ -36,10 +36,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Filter schema context based on user's role and allowed tables
+    // Skip filtering in demo mode — the demo DB is the access boundary
     let filteredSchemaContext = schemaContext;
     let filteredCustomTables = customTables;
 
-    if (session.user.role !== "admin") {
+    if (session.user.role !== "admin" && !isDemo) {
       const permissionContext = {
         role: session.user.role,
         allowedTables: session.user.allowedTables || [],

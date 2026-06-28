@@ -97,6 +97,7 @@ export default function HomePage() {
             userInput,
             databaseType,
             customTables: effectiveTables,
+            isDemo,
           }),
         });
 
