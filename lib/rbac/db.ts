@@ -14,7 +14,9 @@ import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 
-const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "rbac.db");
+const DEFAULT_DB_PATH = process.env.VERCEL
+  ? path.join("/tmp", "rbac.db")
+  : path.join(process.cwd(), "data", "rbac.db");
 
 function getDbPath(): string {
   return process.env.RBAC_DB_PATH || DEFAULT_DB_PATH;
