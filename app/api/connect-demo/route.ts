@@ -46,7 +46,7 @@ export async function POST() {
       password,
       database,
       connectTimeout: 10000,
-      ssl: { rejectUnauthorized: true },
+      ssl: { rejectUnauthorized: false },
     });
 
     connection = {

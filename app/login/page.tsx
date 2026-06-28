@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { Database, Zap, Shield, Play } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,11 +44,8 @@ export default function LoginPage() {
       });
 
       if (result?.ok && !result.error) {
-        // Successful authentication — redirect to main page (Requirement 1.2)
         router.push("/");
       } else {
-        // Generic error message — do not reveal which field is wrong (Requirement 1.3)
-        // Check if the error indicates lockout
         if (result?.error?.includes("locked")) {
           setError(result.error);
         } else {
@@ -62,7 +60,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface bg-grid-pattern bg-grid-size px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-surface bg-grid-pattern bg-grid-size px-4 py-12">
       <div className="w-full max-w-md animate-fade-in">
         {/* Header */}
         <div className="text-center mb-8">
@@ -70,7 +68,7 @@ export default function LoginPage() {
             SQL Query Generator
           </h1>
           <p className="text-sm text-gray-400">
-            Sign in to access the application
+            Convert natural language to SQL queries with AI
           </p>
         </div>
 
@@ -172,7 +170,87 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Demo Credentials Hint */}
+          <div className="mt-6 pt-5 border-t border-surface-border">
+            <p className="text-xs text-gray-500 text-center mb-2">
+              Want to try it out? Use the demo account:
+            </p>
+            <div className="bg-surface rounded-lg border border-surface-border p-3 text-center">
+              <p className="text-xs font-mono text-gray-300">
+                <span className="text-gray-500">Email:</span> admin@admin.com
+              </p>
+              <p className="text-xs font-mono text-gray-300 mt-0.5">
+                <span className="text-gray-500">Password:</span> admin1234
+              </p>
+            </div>
+          </div>
         </div>
+
+        {/* How It Works Section */}
+        <div className="mt-8 bg-surface-card border border-surface-border rounded-xl p-6">
+          <h2 className="text-sm font-semibold text-white mb-4 text-center">
+            How It Works
+          </h2>
+          <div className="space-y-4">
+            {/* Step 1 */}
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-lg bg-brand-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Shield size={14} className="text-brand-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">1. Sign in</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Use the demo credentials above or ask the admin to create your account.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-lg bg-accent-cyan/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Database size={14} className="text-accent-cyan" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">2. Connect a database</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Click <span className="text-accent-cyan font-medium">Try Demo DB</span> to explore with sample data, or connect your own MySQL/PostgreSQL database.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-lg bg-accent-amber/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Zap size={14} className="text-accent-amber" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">3. Describe what you need</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Type in plain English — e.g. &quot;Show all employees from India with salary above 50,000&quot;
+                </p>
+              </div>
+            </div>
+
+            {/* Step 4 */}
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-lg bg-accent-green/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Play size={14} className="text-accent-green" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">4. Execute and explore</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Review the generated SQL, see explanations, and execute queries against your connected database.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-xs text-gray-600 mt-6">
+          Powered by Groq LLM &middot; Supports MySQL &amp; PostgreSQL
+        </p>
       </div>
     </div>
   );

@@ -253,6 +253,7 @@ async function createConnection(config: ConnectionConfig): Promise<UnifiedConnec
       password: config.password || undefined,
       database: config.database,
       connectTimeout: 10000,
+      ssl: config.host.includes("aiven") ? { rejectUnauthorized: false } : undefined,
     });
     return {
       query: async (sql: string) => {

@@ -164,6 +164,7 @@ async function createConnection(
       password: password || undefined,
       database,
       connectTimeout: 10000,
+      ssl: host.includes("aiven") ? { rejectUnauthorized: false } : undefined,
     });
     return {
       query: async (sql: string) => {
