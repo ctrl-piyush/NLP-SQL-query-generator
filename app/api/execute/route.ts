@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { checkQueryPermission } from "@/lib/permissions";
 import {
   validateSingleStatement,
   requiresConfirmation,
@@ -33,6 +36,37 @@ export async function POST(req: NextRequest) {
   try {
     const body: ExecuteRequest = await req.json();
     const { sql, connectionConfig, confirm } = body;
+
+    // ── Authentication check ──────────────────────────────────────────────────
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        {
+          type: "error",
+          code: "AUTH_REQUIRED",
+          message: "Please log in to continue.",
+        } satisfies ExecutionError,
+        { status: 401 }
+      );
+    }
+
+    // ── Permission check ──────────────────────────────────────────────────────
+    if (sql && sql.trim().length > 0) {
+      const permissionResult = checkQueryPermission(sql, {
+        role: session.user.role,
+        allowedTables: session.user.allowedTables,
+      });
+      if (!permissionResult.allowed) {
+        return NextResponse.json(
+          {
+            type: "error",
+            code: "PERMISSION_DENIED",
+            message: permissionResult.reason,
+          } satisfies ExecutionError,
+          { status: 403 }
+        );
+      }
+    }
 
     // ── Reject empty/whitespace SQL ───────────────────────────────────────────
     if (!sql || sql.trim().length === 0) {
@@ -85,12 +119,15 @@ export async function POST(req: NextRequest) {
     // PHASE 2: WRAPPING (only for SELECT — row cap at DB level)
     // ══════════════════════════════════════════════════════════════════════════
 
-    let executableSql = trimmedSql;
+    // Strip trailing semicolons before wrapping — they break subquery syntax
+    const cleanedSql = trimmedSql.replace(/;\s*$/, "");
+
+    let executableSql = cleanedSql;
     if (operationType === "SELECT") {
       if (connectionConfig.databaseType === "mysql") {
-        executableSql = `SELECT * FROM (${trimmedSql}) AS __subq LIMIT 201`;
+        executableSql = `SELECT * FROM (${cleanedSql}) AS __subq LIMIT 201`;
       } else {
-        executableSql = `SELECT * FROM (${trimmedSql}) AS __subq FETCH FIRST 201 ROWS ONLY`;
+        executableSql = `SELECT * FROM (${cleanedSql}) AS __subq FETCH FIRST 201 ROWS ONLY`;
       }
     }
 

@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 // History is stored client-side via Zustand + localStorage persistence.
 // This endpoint provides the history schema / documentation.
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Please log in to continue." }, { status: 401 });
+  }
+
   return NextResponse.json({
     message: "Query history is stored in the browser via localStorage.",
     schema: {

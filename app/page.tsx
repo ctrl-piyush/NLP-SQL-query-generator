@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import ConnectionModal from "@/components/ConnectionModal";
 import ConnectionStatusIndicator from "@/components/ConnectionStatusIndicator";
+import RoleBadge from "@/components/RoleBadge";
 import { Toaster, toast } from "react-hot-toast";
 import { Database, Cpu, Github, BookOpen, Settings2, Zap } from "lucide-react";
 import { useAppStore } from "@/lib/store";
@@ -17,6 +19,10 @@ import type { GeneratedQueryResult, QueryAlternative, QueryHistoryEntry } from "
 import { v4 as uuidv4 } from "uuid";
 
 export default function HomePage() {
+  const { data: session } = useSession();
+  const userRole = session?.user?.role;
+  const isViewer = userRole === "viewer";
+
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GeneratedQueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -161,6 +167,7 @@ export default function HomePage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <RoleBadge />
           <button
             onClick={() => setSchemaEditorOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-surface-border text-xs text-gray-400 hover:text-white hover:border-brand-500/50 transition-all"
@@ -168,7 +175,9 @@ export default function HomePage() {
             <Settings2 size={13} />
             <span className="hidden sm:block">Schema</span>
           </button>
-          <ConnectionStatusIndicator onOpenModal={() => setConnectionModalOpen(true)} />
+          {!isViewer && (
+            <ConnectionStatusIndicator onOpenModal={() => setConnectionModalOpen(true)} />
+          )}
           <a
             href="https://console.groq.com/docs"
             target="_blank"
@@ -218,8 +227,10 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Connection modal */}
-      <ConnectionModal isOpen={connectionModalOpen} onClose={() => setConnectionModalOpen(false)} />
+      {/* Connection modal — hidden for viewer role */}
+      {!isViewer && (
+        <ConnectionModal isOpen={connectionModalOpen} onClose={() => setConnectionModalOpen(false)} />
+      )}
 
       {/* Schema editor modal */}
       {schemaEditorOpen && <SchemaEditor />}

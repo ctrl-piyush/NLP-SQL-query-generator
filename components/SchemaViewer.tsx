@@ -2,6 +2,7 @@
 
 import { Key, Link, ChevronDown, ChevronRight, Table2 } from "lucide-react";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import type { TableInfo } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -85,12 +86,24 @@ function TableCard({ table }: { table: TableInfo }) {
 }
 
 export default function SchemaViewer({ tables }: SchemaViewerProps) {
+  const { data: session, status } = useSession();
+
   if (!tables || tables.length === 0) {
+    const isAuthenticated = status === "authenticated" && !!session?.user;
+
     return (
       <div className="text-center py-8">
         <Table2 size={32} className="text-gray-700 mx-auto mb-2" />
-        <p className="text-sm text-gray-500">No tables identified</p>
-        <p className="text-xs text-gray-600 mt-1">Add your schema in the Schema Editor for richer analysis</p>
+        {isAuthenticated ? (
+          <>
+            <p className="text-sm text-gray-500">No tables are available for your account. Contact your admin for access.</p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-gray-500">No tables identified</p>
+            <p className="text-xs text-gray-600 mt-1">Add your schema in the Schema Editor for richer analysis</p>
+          </>
+        )}
       </div>
     );
   }

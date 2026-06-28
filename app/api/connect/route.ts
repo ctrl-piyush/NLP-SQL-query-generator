@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import type { ConnectRequest, ConnectResponse, LiveTableInfo, LiveColumnInfo } from "@/types";
 
 export const runtime = "nodejs";
@@ -11,6 +13,21 @@ export const runtime = "nodejs";
  * Password is never logged or persisted.
  */
 export async function POST(req: NextRequest) {
+  // ── Session validation ──────────────────────────────────────────────────────
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json(
+      { success: false, message: "Please log in to continue." } satisfies ConnectResponse,
+      { status: 401 }
+    );
+  }
+  if (session.user.role === "viewer") {
+    return NextResponse.json(
+      { success: false, message: "Your role (viewer) does not permit database connections." } satisfies ConnectResponse,
+      { status: 403 }
+    );
+  }
+
   let connection: MysqlConnection | PgConnection | null = null;
 
   try {

@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { filterSchema } from "@/lib/permissions";
 import { generateQueries } from "@/lib/queryGenerator";
-import type { GenerateQueryRequest } from "@/types";
+import type { GenerateQueryRequest, LiveTableInfo } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { error: "Please log in to continue." },
+        { status: 401 }
+      );
+    }
+
     const body: GenerateQueryRequest = await req.json();
     const { userInput, databaseType, schemaContext, customTables } = body;
 
@@ -24,11 +35,47 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Filter schema context based on user's role and allowed tables
+    let filteredSchemaContext = schemaContext;
+    let filteredCustomTables = customTables;
+
+    if (session.user.role !== "admin") {
+      const permissionContext = {
+        role: session.user.role,
+        allowedTables: session.user.allowedTables || [],
+      };
+
+      // Filter schemaContext string: parse as LiveTableInfo[] if possible
+      if (schemaContext) {
+        try {
+          const parsed: LiveTableInfo[] = JSON.parse(schemaContext);
+          if (Array.isArray(parsed)) {
+            const filtered = filterSchema(parsed, permissionContext);
+            filteredSchemaContext = JSON.stringify(filtered);
+          }
+        } catch {
+          // schemaContext is a plain string (not JSON-parseable LiveTableInfo[]),
+          // clear it for non-admin users to prevent exposing unauthorized tables
+          filteredSchemaContext = undefined;
+        }
+      }
+
+      // Filter customTables to only include allowed tables
+      if (customTables && customTables.length > 0) {
+        const allowedSet = new Set(
+          (session.user.allowedTables || []).map((t: string) => t.toLowerCase())
+        );
+        filteredCustomTables = customTables.filter((table) =>
+          allowedSet.has(table.name.toLowerCase())
+        );
+      }
+    }
+
     const result = await generateQueries(
       userInput.trim(),
       databaseType || "mysql",
-      schemaContext,
-      customTables
+      filteredSchemaContext,
+      filteredCustomTables
     );
 
     return NextResponse.json(result);

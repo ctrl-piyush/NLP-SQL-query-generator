@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { Star, ChevronDown, ChevronUp, Zap, Code2, Play, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { QueryAlternative, QueryImpact, ExecutionResult } from "@/types";
 import { useConnectionStore } from "@/lib/connectionStore";
+import { canExecuteClient } from "@/lib/clientPermissions";
 import ConfirmationDialog from "./ConfirmationDialog";
 import SqlCodeBlock from "./SqlCodeBlock";
 import Badge from "./Badge";
@@ -36,6 +38,10 @@ export default function QueryAlternatives({
   const [executingId, setExecutingId] = useState<string | null>(null);
   const [pendingExecuteAlt, setPendingExecuteAlt] = useState<QueryAlternative | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  const { data: session } = useSession();
+  const userRole = session?.user?.role ?? "viewer";
+  const allowedTables = session?.user?.allowedTables ?? [];
 
   const { isConnected, connectionConfig, setExecutionResult, setIsExecuting } =
     useConnectionStore();
@@ -193,34 +199,49 @@ export default function QueryAlternatives({
                   </button>
 
                   {/* Execute button */}
-                  <div className="relative group">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleExecuteClick(alt);
-                      }}
-                      disabled={!isConnected || isExecuting}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all",
-                        isConnected && !isExecuting
-                          ? "bg-accent-green/10 text-accent-green border border-accent-green/30 hover:bg-accent-green/20"
-                          : "bg-surface-border text-gray-500 border border-surface-border opacity-50 cursor-not-allowed"
-                      )}
-                      aria-label={!isConnected ? "Connect to a database to execute" : "Execute query"}
-                    >
-                      {isExecuting ? (
-                        <Loader2 size={12} className="animate-spin" />
-                      ) : (
-                        <Play size={12} />
-                      )}
-                      {isExecuting ? "Running" : "Execute"}
-                    </button>
-                    {/* Tooltip when disabled due to no connection */}
-                    {!isConnected && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded bg-gray-900 border border-surface-border text-xs text-gray-300 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                        Connect to a database to execute
-                      </div>
-                    )}
+                  <div className="relative group/exec">
+                    {(() => {
+                      const permission = canExecuteClient(alt.sql, userRole, allowedTables);
+                      const isDisabledByRole = !permission.allowed;
+                      const isDisabled = !isConnected || isExecuting || isDisabledByRole;
+                      const tooltipText = isDisabledByRole
+                        ? permission.reason
+                        : !isConnected
+                          ? "Connect to a database to execute"
+                          : undefined;
+
+                      return (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleExecuteClick(alt);
+                            }}
+                            disabled={isDisabled}
+                            className={cn(
+                              "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all",
+                              !isDisabled
+                                ? "bg-accent-green/10 text-accent-green border border-accent-green/30 hover:bg-accent-green/20"
+                                : "bg-surface-border text-gray-500 border border-surface-border opacity-50 cursor-not-allowed"
+                            )}
+                            aria-label={tooltipText ?? "Execute query"}
+                          >
+                            {isExecuting ? (
+                              <Loader2 size={12} className="animate-spin" />
+                            ) : (
+                              <Play size={12} />
+                            )}
+                            {isExecuting ? "Running" : "Execute"}
+                          </button>
+                          {/* Tooltip when disabled */}
+                          {tooltipText && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded bg-gray-900 border border-surface-border text-xs text-gray-300 whitespace-nowrap opacity-0 group-hover/exec:opacity-100 transition-opacity pointer-events-none z-10">
+                              {tooltipText}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* Chevron expand icon */}

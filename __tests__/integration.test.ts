@@ -213,7 +213,7 @@ describe("MySQL Integration Tests", () => {
       const [result] = await connection.execute(insertSql);
 
       // Extract affectedRows (same logic as route's extractAffectedRows)
-      const resultObj = result as Record<string, unknown>;
+      const resultObj = result as unknown as Record<string, unknown>;
       const affectedRows =
         typeof resultObj.affectedRows === "number"
           ? resultObj.affectedRows
