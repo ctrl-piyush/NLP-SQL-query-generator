@@ -12,7 +12,7 @@ import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 const DEFAULT_DB_PATH = process.env.VERCEL
   ? path.join("/tmp", "rbac.db")
