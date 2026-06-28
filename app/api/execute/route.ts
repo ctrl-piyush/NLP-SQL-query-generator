@@ -50,8 +50,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Permission check ──────────────────────────────────────────────────────
-    if (sql && sql.trim().length > 0) {
+    // ── Permission check (skip for demo mode — demo enforces SELECT-only separately) ──
+    if (sql && sql.trim().length > 0 && !isDemo) {
       const permissionResult = checkQueryPermission(sql, {
         role: session.user.role,
         allowedTables: session.user.allowedTables,
